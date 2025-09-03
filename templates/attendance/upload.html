@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Students - SBU QR Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    color: #212529 !important;
+    font-weight: 600;
+}
+.page-subtitle {
+    color: #6c757d !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="page-header"><i class="fas fa-upload"></i> Upload Students</h2>
+            <p class="page-subtitle">Import student data for Sarala Birla University</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-upload"></i> Upload Students CSV</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> CSV Format Requirements:</h6>
+                        <p>Your CSV file should have the following columns for <strong>Sarala Birla University</strong>:</p>
+                        <ul>
+                            <li><strong>student_id</strong> - Student ID in SBU format (e.g., SBU123456)</li>
+                            <li><strong>name</strong> - Student's full name</li>
+                            <li><strong>email</strong> - Student's email address</li>
+                            <li><strong>phone</strong> - Phone number with country code (optional)</li>
+                            <li><strong>course</strong> - Course/program name</li>
+                        </ul>
+                        <small class="text-muted">Example: student_id,name,email,phone,course</small><br>
+                        <small class="text-muted">Sample: SBU123456,John Doe,john@sbu.edu.in,+91 9876543210,Computer Science</small>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data" class="border p-4 rounded bg-light">
+                      {% csrf_token %}
+                      <div class="mb-3">
+                          <label for="id_file" class="form-label fw-bold">Select CSV File</label>
+                          {{ form.file }}
+                          <div class="form-text">
+                              <i class="fas fa-info-circle"></i> 
+                              Upload a CSV file with student data in SBU format
+                          </div>
+                      </div>
+                      <button type="submit" class="btn btn-primary btn-lg">
+                          <i class="fas fa-upload"></i> Upload Students
+                      </button>
+                    </form>
+                    
+                    <div class="mt-3">
+                        <div class="alert alert-light border">
+                            <h6 class="mb-2"><i class="fas fa-clock"></i> Upload Process</h6>
+                            <small class="text-muted">
+                                After uploading, you'll see a detailed summary of the results. 
+                                Success messages will remain visible for 15 seconds and show:
+                                <ul class="mb-0 mt-2">
+                                    <li>Number of new students created</li>
+                                    <li>Number of existing students updated</li>
+                                    <li>Any validation errors encountered</li>
+                                </ul>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-download"></i> Sample CSV File</h5>
+                </div>
+                <div class="card-body">
+                    <p>Download a sample CSV file with the correct format:</p>
+                    <a href="/static/sample_students_sbu.csv" class="btn btn-outline-success" download>
+                        <i class="fas fa-download"></i> Download Sample CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

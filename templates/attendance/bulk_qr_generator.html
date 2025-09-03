@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk QR Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/"><i class="fas fa-qrcode"></i> QR Attendance</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/upload/">Upload Students</a></li>
+        <li class="nav-item"><a class="nav-link" href="/students/">Students</a></li>
+        <li class="nav-item"><a class="nav-link" href="/seminars/">Seminars</a></li>
+        <li class="nav-item"><a class="nav-link" href="/scan/">Scan QR</a></li>
+        <li class="nav-item"><a class="nav-link" href="/generate-qr/">QR Generator</a></li>
+        <li class="nav-item"><a class="nav-link" href="/export/">Export Attendance</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-cogs"></i> Custom QR Code Generator</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="qr_data" class="form-label">QR Code Data</label>
+                            <textarea class="form-control" id="qr_data" name="qr_data" rows="10" 
+                                      placeholder="Enter text, URL, or JSON data for QR code generation..."></textarea>
+                            <div class="form-text">
+                                You can enter:
+                                <ul>
+                                    <li><strong>Plain text:</strong> Any text or URL</li>
+                                    <li><strong>JSON data:</strong> {"name": "John", "id": "123"}</li>
+                                    <li><strong>Multiple JSON objects:</strong> [{"name": "John"}, {"name": "Jane"}]</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="style" class="form-label">QR Code Style</label>
+                            <select class="form-select" id="style" name="style">
+                                <option value="basic">Basic (Simple black and white)</option>
+                                <option value="styled">Styled (With additional info)</option>
+                                <option value="colored">Colored (Navy blue)</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-qrcode"></i> Generate QR Code(s)
+                        </button>
+                        <a href="{% url 'qr_generator' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to QR Generator
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fas fa-lightbulb"></i> Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Simple Text:</strong>
+                        <pre class="small bg-light p-2">Hello World!</pre>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>URL:</strong>
+                        <pre class="small bg-light p-2">https://example.com</pre>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>JSON Object:</strong>
+                        <pre class="small bg-light p-2">{
+  "name": "John Doe",
+  "id": "ST001",
+  "email": "john@example.com"
+}</pre>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Multiple JSON Objects:</strong>
+                        <pre class="small bg-light p-2">[
+  {"name": "John", "id": "ST001"},
+  {"name": "Jane", "id": "ST002"}
+]</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h6><i class="fas fa-download"></i> Output</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="small">
+                        <li><strong>Single QR:</strong> Downloads as PNG image</li>
+                        <li><strong>Multiple QRs:</strong> Downloads as ZIP file</li>
+                        <li><strong>High Quality:</strong> 300 DPI for printing</li>
+                        <li><strong>Mobile Ready:</strong> Optimized for phone scanning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Auto-format JSON
+document.getElementById('qr_data').addEventListener('blur', function() {
+    const value = this.value.trim();
+    if (value.startsWith('{') || value.startsWith('[')) {
+        try {
+            const parsed = JSON.parse(value);
+            this.value = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            // Not valid JSON, leave as is
+        }
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Seminars Management - SBU QR Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-calendar"></i> Seminars Management</h2>
+            <p class="text-muted">Manage seminars and lectures for attendance tracking</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSeminarModal">
+                <i class="fas fa-plus"></i> Create New Seminar
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Seminars -->
+    {% if active_seminars %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5><i class="fas fa-play-circle"></i> Active Seminars</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for seminar in active_seminars %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ seminar.title }}</h6>
+                            <p class="card-text">
+                                <strong>ID:</strong> {{ seminar.seminar_id }}<br>
+                                <strong>Time:</strong> {{ seminar.start_time|date:"M d, Y g:i A" }} - {{ seminar.end_time|date:"g:i A" }}
+                            </p>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'scan_seminar' seminar.seminar_id %}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-qrcode"></i> Scan QR
+                                </a>
+                                <a href="{% url 'export_seminar_attendance' seminar.seminar_id %}" class="btn btn-outline-secondary btn-sm" title="Export CSV">
+                                    <i class="fas fa-file-csv"></i>
+                                </a>
+                                <form method="post" action="{% url 'update_seminar_status' seminar.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="ended">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('End this seminar?')">
+                                        <i class="fas fa-stop"></i> End Seminar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Seminars Table -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5><i class="fas fa-list"></i> All Seminars</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Seminar ID</th>
+                            <th>Title</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                            <th>Attendance Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for seminar in seminars %}
+                        <tr>
+                            <td><strong>{{ seminar.seminar_id }}</strong></td>
+                            <td>{{ seminar.title }}</td>
+                            <td>
+                                {{ seminar.start_time|date:"M d, Y" }}<br>
+                                <small class="text-muted">{{ seminar.start_time|date:"g:i A" }} - {{ seminar.end_time|date:"g:i A" }}</small>
+                            </td>
+                            <td>
+                                {% if seminar.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif seminar.status == 'ended' %}
+                                    <span class="badge bg-danger">Ended</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ seminar.attendance_set.count }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    {% if seminar.status == 'inactive' %}
+                                        <form method="post" action="{% url 'update_seminar_status' seminar.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="active">
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fas fa-play"></i> Activate
+                                            </button>
+                                        </form>
+                                    {% elif seminar.status == 'active' %}
+                                        <a href="{% url 'scan_seminar' seminar.seminar_id %}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-qrcode"></i> Scan
+                                        </a>
+                                        <a href="{% url 'export_seminar_attendance' seminar.seminar_id %}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-file-csv"></i>
+                                        </a>
+                                        <form method="post" action="{% url 'update_seminar_status' seminar.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="ended">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('End this seminar?')">
+                                                <i class="fas fa-stop"></i> End
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <a href="{% url 'export_seminar_attendance' seminar.seminar_id %}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-file-export"></i>
+                                        </a>
+                                        <span class="text-muted">Ended</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                <i class="fas fa-calendar-slash fa-2x mb-3"></i><br>
+                                No seminars created yet.<br>
+                                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createSeminarModal">
+                                    <i class="fas fa-plus"></i> Create First Seminar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Seminar Modal -->
+<div class="modal fade" id="createSeminarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Create New Seminar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="seminar_id" class="form-label">Seminar ID</label>
+                        <input type="text" class="form-control" id="seminar_id" name="seminar_id" required>
+                        <div class="form-text">Unique identifier for this seminar</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Initial Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="inactive">Inactive (create for later)</option>
+                            <option value="active">Active (start immediately)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Seminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

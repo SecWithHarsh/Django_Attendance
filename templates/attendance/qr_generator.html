@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}QR Code Generator - SBU QR Attendance System{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="page-intro text-center mb-4">
+        <h2 class="section-title mb-1"><i class="fas fa-qrcode me-2"></i>QR Code Generator</h2>
+        <p class="text-muted mb-0">Generate, download and manage student QR codes efficiently.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Generation Tools</h5>
+                </div>
+                <div class="card-body pb-1">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm generation-block">
+                                <div class="card-header bg-success text-white py-2">
+                                    <h6 class="mb-0 small text-uppercase"><i class="fas fa-users me-1"></i>All Students</h6>
+                                </div>
+                                <div class="card-body small">
+                                    <p class="mb-2">Regenerate or download a full set of QR codes for every registered student.</p>
+                                    <form method="post" action="{% url 'regenerate_qr_codes' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm w-100 mb-2">
+                                            <i class="fas fa-sync-alt me-1"></i>Regenerate All
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'download_all_qr_codes' %}" class="btn btn-outline-success btn-sm w-100">
+                                        <i class="fas fa-download me-1"></i>Download Zip
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm generation-block">
+                                <div class="card-header bg-warning text-dark py-2">
+                                    <h6 class="mb-0 small text-uppercase"><i class="fas fa-flask me-1"></i>Custom / Bulk</h6>
+                                </div>
+                                <div class="card-body small">
+                                    <p class="mb-2">Need special content or formats? Use the bulk / custom generator.</p>
+                                    <a href="{% url 'bulk_qr_generator' %}" class="btn btn-warning btn-sm w-100 text-dark fw-semibold">
+                                        <i class="fas fa-plus me-1"></i>Open Custom Generator
+                                        </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-info text-white py-2 d-flex align-items-center">
+                            <h6 class="mb-0 small text-uppercase"><i class="fas fa-list me-1"></i>Individual Student Codes</h6>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Course</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        <tr>
+                                            <td><strong>{{ student.student_id }}</strong></td>
+                                            <td>{{ student.name }}</td>
+                                            <td>{{ student.course }}</td>
+                                            <td>
+                                                <a href="{% url 'generate_single_qr' student.student_id %}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                                    <i class="fas fa-qrcode me-1"></i>Generate
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                No students found. <a href="{% url 'upload_students' %}">Upload students</a> first.
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100 info-panel">
+                <div class="card-header bg-secondary text-white py-2">
+                    <h6 class="mb-0 small text-uppercase"><i class="fas fa-chart-bar me-1"></i>Overview</h6>
+                </div>
+                <div class="card-body small">
+                    <div class="row text-center mb-3 g-2">
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="fw-semibold text-primary">{{ students.count }}</div>
+                                <div class="text-muted small">Students</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="fw-semibold text-success">{{ students.count }}</div>
+                                <div class="text-muted small">QR Codes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <strong class="d-block mb-2">Why QR Codes?</strong>
+                    <ul class="small mb-3 ps-3">
+                        <li>Fast scanning & verification</li>
+                        <li>Compact, print-ready format</li>
+                        <li>Consistent student identity data</li>
+                        <li>Works offline once printed</li>
+                    </ul>
+                    <div class="alert alert-info py-2 px-3 small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Regenerate after adding or editing students to keep codes current.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

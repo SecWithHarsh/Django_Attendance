@@ -1,0 +1,937 @@
+{% extends 'base.html' %}
+
+{% block title %}Scan QR Code - QR Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Audio elements for different scan sounds */
+.scan-audio {
+    display: none;
+}
+
+.scan-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#reader {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: #f8f9fa;
+    width: 100%;
+    min-height: 500px;
+}
+
+.scanner-controls {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    border-color: #007bff;
+    background: #e7f3ff;
+}
+
+.upload-area.dragover {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+/* New upload zones in scan results */
+/* Removed per-result upload zones */
+
+#results {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.scan-result {
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+.scan-result:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.scan-result .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.scan-result .card-body {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 20px;
+}
+
+.scan-success {
+    border-left: 5px solid #28a745 !important;
+}
+
+.scan-error {
+    border-left: 5px solid #dc3545 !important;
+}
+
+.scan-warning {
+    border-left: 5px solid #ffc107 !important;
+}
+
+.student-info .badge {
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+}
+
+.scan-meta {
+    font-size: 0.9rem;
+    margin-top: 12px;
+}
+
+.scan-meta i {
+    opacity: 0.7;
+}
+
+.response-details {
+    animation: fadeIn 0.5s ease-in;
+    border-radius: 12px !important;
+    margin-top: 20px !important;
+    padding: 16px !important;
+    border-left: 4px solid #6c757d !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #dee2e6 !important;
+}
+
+.response-details .bg-white {
+    background: white !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.response-details .text-dark {
+    line-height: 1.6;
+    word-wrap: break-word;
+    color: #495057 !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.accordion-item {
+    margin-top: 10px;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.scan-warning {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+.btn-scan {
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 20px;
+}
+
+/* Performance optimization for high-volume scanning */
+.scan-result pre {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+}
+
+.scan-result details summary {
+    cursor: pointer;
+    user-select: none;
+}
+
+.scan-result .badge {
+    font-size: 0.9rem;
+}
+
+/* Statistics panel styling */
+.stats-item {
+    padding: 10px;
+    border-radius: 8px;
+    background: white;
+    margin: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stats-item h5 {
+    color: #007bff;
+    font-weight: bold;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    #results {
+        max-height: 250px;
+    }
+    
+    .scan-result {
+        padding: 10px;
+        margin: 5px 0;
+    }
+    
+    .stats-item {
+        margin: 2px;
+        padding: 8px;
+    }
+    
+    #reader {
+        min-height: 400px !important;
+    }
+    
+    .col-lg-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .col-lg-2 {
+        margin-top: 20px;
+    }
+}
+
+/* Full-screen scanner optimizations */
+@media (min-width: 769px) {
+    #reader {
+        min-height: 600px !important;
+    }
+}
+
+/* QR Code scanner specific styling */
+#reader video {
+    border-radius: 8px;
+}
+
+#reader canvas {
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <!-- Audio elements -->
+  <audio id="sound-success" class="scan-audio" preload="auto">
+    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAAA//8AAP//AAD//wAA//8AAP//AAD//wAA" type="audio/wav">
+  </audio>
+  <audio id="sound-duplicate" class="scan-audio" preload="auto">
+    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQwAAAAA//8A////AP//AAD//wD///8A//8AAA==" type="audio/wav">
+  </audio>
+  <audio id="sound-error" class="scan-audio" preload="auto">
+    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQ4AAAAA//8A/wD/AP8A//8A/wD/AP8A//8A" type="audio/wav">
+  </audio>
+  
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {% if seminar %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Scanning for:</strong> {{ seminar.title }} ({{ seminar.seminar_id }})
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not seminar and seminars %}
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Active Seminars</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Please select a seminar to scan attendance for:</p>
+                        <div class="row">
+                            {% for active_seminar in seminars %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <h6>{{ active_seminar.title }}</h6>
+                                            <p class="text-muted mb-2">ID: {{ active_seminar.seminar_id }}</p>
+                                            <a href="{% url 'scan_seminar' active_seminar.seminar_id %}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-qrcode me-1"></i> Scan for this Seminar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% elif not seminar and not seminars %}
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>No Active Seminars</strong><br>
+                    There are currently no active seminars to scan attendance for. Please contact staff to activate a seminar.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if seminar or seminars %}
+        <!-- Statistics Panel -->
+        {% if seminar %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stats-item">
+                                    <h5 class="mb-1" id="total-scanned">0</h5>
+                                    <small class="text-muted">📱 Total Scanned</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-item">
+                                    <h5 class="mb-1" id="successful-scans">0</h5>
+                                    <small class="text-muted">✅ Successful</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-item">
+                                    <h5 class="mb-1" id="duplicate-scans">0</h5>
+                                    <small class="text-muted">🔄 Duplicates</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-item">
+                                    <h5 class="mb-1" id="scan-rate">0/min</h5>
+                                    <small class="text-muted">⚡ Scan Rate</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-12">
+                <div class="scan-container">
+                    <h4 class="text-center mb-4">
+                        <i class="fas fa-qrcode me-2"></i>QR Code Scanner
+                        {% if seminar %}
+                            <small class="text-muted d-block">{{ seminar.title }}</small>
+                        {% endif %}
+                    </h4>
+                    
+                    <!-- Camera Scanner -->
+                    <div id="reader" style="width: 100%; min-height: 500px;"></div>
+                    
+                    <!-- Scanner Controls -->
+                    <div class="scanner-controls">
+                        <div class="text-center mb-3">
+                            <button id="start-camera" class="btn btn-success btn-scan me-2">
+                                <i class="fas fa-camera me-1"></i> Start Camera
+                            </button>
+                            <button id="stop-camera" class="btn btn-danger btn-scan" disabled>
+                                <i class="fas fa-stop me-1"></i> Stop Camera
+                            </button>
+                        </div>
+                        
+                        <!-- File Upload -->
+                        <div class="upload-area mb-3" id="upload-area">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                            <p class="mb-2"><strong>Upload QR Code Image</strong></p>
+                            <p class="small text-muted">Drag and drop or click to select</p>
+                            <input type="file" id="qr-input-file" accept="image/*" style="display: none;">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('qr-input-file').click()">
+                                <i class="fas fa-upload me-1"></i> Choose File
+                            </button>
+                        </div>
+                        
+                        <!-- Enhanced Upload Info -->
+                        <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-lightbulb text-info me-2"></i>
+                                <strong class="text-info">Pro Tip:</strong>
+                            </div>
+                            <p class="small mb-0 mt-1 text-muted">
+                                Camera scanning is faster! Upload images when camera isn't available.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Results Panel -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0"><i class="fas fa-stream me-2"></i>Scan Results</h5>
+                            <div class="small text-muted">Latest first (auto trims after 50)</div>
+                        </div>
+                        <div id="results" class="p-3 bg-light border rounded" style="max-height: 380px; overflow-y:auto;"></div>
+                    </div>
+
+                    <!-- Manual Late Entry -->
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header"><strong><i class="fas fa-keyboard me-2"></i>Manual Entry (Late / Missed)</strong></div>
+                            <div class="card-body">
+                                <form id="manual-form" class="row g-2 align-items-end">
+                                    <div class="col-sm-4 col-md-3">
+                                        <label class="form-label small mb-1">Student ID</label>
+                                        <input type="text" id="manual-id" class="form-control form-control-sm" placeholder="SBU123456" maxlength="9">
+                                    </div>
+                                    <div class="col-sm-4 col-md-3">
+                                        <label class="form-label small mb-1">Seminar</label>
+                                        <input type="text" class="form-control form-control-sm" value="{% if seminar %}{{ seminar.seminar_id }}{% endif %}" disabled>
+                                    </div>
+                                    <div class="col-sm-4 col-md-2">
+                                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-plus-circle me-1"></i>Add</button>
+                                    </div>
+                                    <div class="col-12 small text-muted mt-2">
+                                        Use only if a student genuinely missed scanning. Format must be SBU + 6 digits.
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Guide Section -->
+                    <div class="mt-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded h-100 bg-white">
+                                    <h6><i class="fas fa-info-circle me-1 text-primary"></i>How to Scan</h6>
+                                    <ol class="small mb-2">
+                                        <li>Start camera and show QR code anywhere in view</li>
+                                        <li>Or upload QR image</li>
+                                        <li>Monitor results below</li>
+                                    </ol>
+                                    <h6 class="mt-3"><i class="fas fa-lightbulb me-1 text-warning"></i>Tips</h6>
+                                    <ul class="small mb-0">
+                                        <li>Good lighting & focus</li>
+                                        <li>Keep QR flat</li>
+                                        <li>Avoid glare</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded h-100 bg-white">
+                                    <h6><i class="fas fa-shield-alt me-1 text-success"></i>Validation</h6>
+                                    <p class="small mb-1">Only registered Students (SBU pattern) are accepted.</p>
+                                    <p class="small mb-2">Duplicate attempts show warning & don't re-count.</p>
+                                    {% if seminar %}
+                                    <a href="{% url 'export_seminar_attendance' seminar.seminar_id %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-file-csv me-1"></i> Export Attendance
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Hidden CSRF form for AJAX requests -->
+<form id="csrf-form" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<!-- Temporary reader for image processing -->
+<div id="temp-reader" style="display: none;"></div>
+
+<!-- QR Code Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<!-- Django template data for JavaScript -->
+<script id="django-data" type="application/json">
+{
+    "hasActiveSeminar": {% if seminar or seminars %}true{% else %}false{% endif %}
+}
+</script>
+
+<script>
+let html5QrcodeScanner;
+let cameraStarted = false;
+const djangoData = JSON.parse(document.getElementById('django-data').textContent);
+const hasActiveSeminar = djangoData.hasActiveSeminar;
+
+// Performance tracking variables
+let scanStats = {
+    totalScanned: 0,
+    successfulScans: 0,
+    duplicateScans: 0,
+    scanTimes: [],
+    startTime: Date.now()
+};
+
+function updateStats() {
+    if (hasActiveSeminar) {
+        document.getElementById('total-scanned').textContent = scanStats.totalScanned;
+        document.getElementById('successful-scans').textContent = scanStats.successfulScans;
+        document.getElementById('duplicate-scans').textContent = scanStats.duplicateScans;
+        
+        // Calculate scan rate (scans per minute)
+        const minutesElapsed = (Date.now() - scanStats.startTime) / (1000 * 60);
+        const scanRate = minutesElapsed > 0 ? (scanStats.totalScanned / minutesElapsed).toFixed(1) : 0;
+        document.getElementById('scan-rate').textContent = `${scanRate}/min`;
+    }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    // Update performance statistics
+    scanStats.totalScanned++;
+    scanStats.scanTimes.push(Date.now());
+    updateStats();
+    
+    // Process the scanned QR code
+    const resultDiv = document.getElementById('results');
+    const timestamp = new Date().toLocaleString();
+    const scanId = `scan-${Date.now()}`;
+    
+    try {
+        // Try to parse as JSON first
+        const data = JSON.parse(decodedText);
+        const studentId = data.StudentID || data.student_id || decodedText;
+        
+        // Show detailed QR data preview with improved UI
+        resultDiv.innerHTML += `
+            <div class="scan-result scan-success border-start border-5 border-primary" id="${scanId}">
+                <div class="card shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-qrcode text-primary me-2"></i>
+                                    <strong class="text-dark">QR Code Detected</strong>
+                                    <div class="spinner-border spinner-border-sm text-success ms-auto" role="status">
+                                        <span class="visually-hidden">Processing...</span>
+                                    </div>
+                                </div>
+                                <div class="student-info">
+                                    <span class="badge bg-gradient bg-primary px-3 py-2 rounded-pill">
+                                        <i class="fas fa-user me-1"></i>Student ID: ${studentId}
+                                    </span>
+                                </div>
+                                <div class="scan-meta mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>${timestamp}
+                                    </small>
+                                    <span class="text-success ms-3">
+                                        <i class="fas fa-hourglass-half me-1"></i>Processing attendance...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        
+        // Send to server
+        submitQRData(studentId, scanId);
+        
+    } catch (e) {
+        // If not JSON, treat as plain student ID with improved UI
+        const studentId = decodedText.trim().toUpperCase();
+        
+        resultDiv.innerHTML += `
+            <div class="scan-result scan-success border-start border-5 border-info" id="${scanId}">
+                <div class="card shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-barcode text-info me-2"></i>
+                                    <strong class="text-dark">Code Detected</strong>
+                                    <div class="spinner-border spinner-border-sm text-success ms-auto" role="status">
+                                        <span class="visually-hidden">Processing...</span>
+                                    </div>
+                                </div>
+                                <div class="student-info">
+                                    <span class="badge bg-gradient bg-info px-3 py-2 rounded-pill">
+                                        <i class="fas fa-hashtag me-1"></i>Data: ${studentId}
+                                    </span>
+                                </div>
+                                <div class="scan-meta mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>${timestamp}
+                                    </small>
+                                    <span class="text-success ms-3">
+                                        <i class="fas fa-hourglass-half me-1"></i>Processing attendance...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        
+        submitQRData(studentId, scanId);
+    }
+    
+    // Auto-scroll to results
+    resultDiv.scrollTop = resultDiv.scrollHeight;
+    
+    // Performance optimization: Limit results display to last 50 scans
+    const scanResults = resultDiv.querySelectorAll('.scan-result');
+    if (scanResults.length > 50) {
+        scanResults[0].remove();
+    }
+}
+
+function onScanFailure(error) {
+    // Handle scan failure (this happens frequently, so we don't log every failure)
+    // Only log if it's not a common "no code found" error
+    if (error && !error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
+        console.log(`🔍 Scan attempt: ${error}`);
+    }
+}
+
+function submitQRData(studentData, scanId) {
+    // Get CSRF token safely
+    const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfTokenElement) {
+        console.error('CSRF token not found');
+        updateScanResult(scanId, 'error', 'CSRF token not found - please refresh the page');
+        return;
+    }
+    const csrfToken = csrfTokenElement.value;
+    
+    // Use fetch API for better performance (no page reload)
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({
+            'qr_data': studentData,
+            'csrfmiddlewaretoken': csrfToken
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            updateScanResult(scanId, 'success', data.success);
+            scanStats.successfulScans++;
+        } else if (data.warning) {
+            updateScanResult(scanId, 'warning', data.warning);
+            scanStats.duplicateScans++;
+        } else if (data.error) {
+            updateScanResult(scanId, 'error', data.error);
+        } else {
+            updateScanResult(scanId, 'error', 'Unknown response from server');
+        }
+        updateStats();
+    })
+    .catch(error => {
+        console.error('Error submitting QR data:', error);
+        updateScanResult(scanId, 'error', `Network error: ${error.message}`);
+        updateStats();
+    });
+}
+
+function updateScanResult(scanId, status, message) {
+    const scanElement = document.getElementById(scanId);
+    if (scanElement) {
+        // Remove spinner
+        const spinner = scanElement.querySelector('.spinner-border');
+        if (spinner) spinner.remove();
+        
+        // Update border color based on status
+        scanElement.className = scanElement.className.replace(/border-(primary|info|success|warning|danger)/, 
+            `border-${status === 'success' ? 'success' : status === 'warning' ? 'warning' : 'danger'}`);
+        
+        // Update the status message with enhanced styling
+        const statusElement = scanElement.querySelector('.scan-meta span.text-success');
+        if (statusElement) {
+            const iconMap = {
+                'success': 'fas fa-check-circle text-success',
+                'warning': 'fas fa-exclamation-triangle text-warning', 
+                'error': 'fas fa-times-circle text-danger'
+            };
+            
+            const colorMap = {
+                'success': 'text-success',
+                'warning': 'text-warning',
+                'error': 'text-danger'
+            };
+            
+            statusElement.className = colorMap[status] + ' ms-3';
+            statusElement.innerHTML = `<i class="${iconMap[status]} me-1"></i>${message.split('\n')[0]}`;
+        }
+        
+        // Add detailed response if available
+        if (message.includes('\n')) {
+            const details = message.split('\n').slice(1).join('\n');
+            const cardBody = scanElement.querySelector('.card-body');
+            if (cardBody && details.trim()) {
+                const existingResponse = cardBody.querySelector('.response-details');
+                if (!existingResponse) {
+                    const responseDiv = document.createElement('div');
+                    responseDiv.className = 'response-details mt-4 p-3 border rounded-3';
+                    responseDiv.style.cssText = `
+                        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                        border-left: 4px solid #6c757d !important;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        margin-top: 20px !important;
+                    `;
+                    responseDiv.innerHTML = `
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-server text-secondary me-2 fs-5"></i>
+                            <strong class="text-secondary fs-6">Server Response Details</strong>
+                        </div>
+                        <div class="bg-white p-3 rounded border" style="line-height: 1.6; font-size: 0.9rem;">
+                            ${details.replace(/\n/g, '<br>')}
+                        </div>
+                    `;
+                    cardBody.appendChild(responseDiv);
+                }
+            }
+        }
+        
+        // Add success animation for successful scans
+        if (status === 'success') {
+            scanElement.classList.add('animate__animated', 'animate__pulse');
+            setTimeout(() => {
+                scanElement.classList.remove('animate__animated', 'animate__pulse');
+            }, 1000);
+        }
+    }
+}
+
+// Helper to play sounds safely without blocking
+function playScanSound(type) {
+  try {
+    const map = { success: 'sound-success', warning: 'sound-duplicate', error: 'sound-error' };
+    const el = document.getElementById(map[type]);
+    if (el) { el.currentTime = 0; el.play().catch(()=>{}); }
+  } catch(e) { /* silent */ }
+}
+
+// Enhance existing updateScanResult to include audio (monkey patch pattern)
+(function() {
+  const original = window.updateScanResult;
+  window.updateScanResult = function(scanId, status, message) {
+    if (typeof original === 'function') original(scanId, status, message);
+    // Play corresponding sound
+    if (status === 'success') playScanSound('success');
+    else if (status === 'warning') playScanSound('warning');
+    else playScanSound('error');
+    // Ensure response panel spacing not cramped
+    const el = document.getElementById(scanId);
+    if (el) {
+      const resp = el.querySelector('.response-details');
+      if (resp) {
+        resp.classList.add('mt-3');
+      }
+    }
+    
+  }
+})();
+
+// Removed per-result upload zone helper functions
+
+function startCamera() {
+    if (cameraStarted) return;
+    
+    const config = {
+        fps: 15,
+        // Full screen scanning - no scanning box constraint
+        // This allows QR codes to be detected anywhere in the camera view
+        aspectRatio: 1.0,
+        disableFlip: false, // Allow camera flipping for better detection
+        rememberLastUsedCamera: true, // Remember camera choice
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] // Only camera scanning
+    };
+    
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+            html5QrcodeScanner.start(
+                devices[0].id,
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                cameraStarted = true;
+                document.getElementById('start-camera').disabled = true;
+                document.getElementById('stop-camera').disabled = false;
+                console.log("QR Code scanning started.");
+            }).catch(err => {
+                console.log(`Unable to start scanning, error: ${err}`);
+                alert('Unable to start camera. Please check permissions and try manual upload.');
+            });
+        }
+    }).catch(err => {
+        console.log(`Error getting cameras: ${err}`);
+        alert('No cameras found. Please use file upload or manual entry.');
+    });
+}
+
+function stopCamera() {
+    if (html5QrcodeScanner && cameraStarted) {
+        html5QrcodeScanner.stop().then(ignore => {
+            cameraStarted = false;
+            document.getElementById('start-camera').disabled = false;
+            document.getElementById('stop-camera').disabled = true;
+            console.log("QR Code scanning stopped.");
+        }).catch(err => {
+            console.log('Error stopping scanner:', err);
+        });
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Only initialize if we have an active seminar
+    if (hasActiveSeminar) {
+        // Camera controls
+        document.getElementById('start-camera').addEventListener('click', startCamera);
+        document.getElementById('stop-camera').addEventListener('click', stopCamera);
+        
+        // File upload
+        const fileInput = document.getElementById('qr-input-file');
+        const uploadArea = document.getElementById('upload-area');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const html5QrCode = new Html5Qrcode("reader");
+                html5QrCode.scanFile(file, true)
+                    .then(decodedText => {
+                        onScanSuccess(decodedText, null);
+                    })
+                    .catch(err => {
+                        console.log(`Error scanning file: ${err}`);
+                        alert('Unable to scan QR code from image. Please try another image or manual entry.');
+                    });
+            }
+        });
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                const event = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(event);
+            }
+        });
+        
+        // Auto-start camera after a delay
+        setTimeout(startCamera, 1000);
+        
+        // Test connection to server (debug feature)
+        testServerConnection();
+    }
+    // Manual late entry handler
+    const manualForm = document.getElementById('manual-form');
+    if (manualForm) {
+        manualForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('manual-id');
+            const val = (input.value || '').trim().toUpperCase();
+            if(!val) { input.focus(); return; }
+            if(!/^SBU\d{6}$/.test(val)) {
+                alert('Invalid ID format. Use SBU followed by 6 digits.');
+                input.focus();
+                return;
+            }
+            onScanSuccess(val, null);
+            input.value='';
+        });
+    }
+});
+
+// Test server connection for debugging
+function testServerConnection() {
+    console.log('🔗 Testing server connection...');
+    fetch(window.location.href, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log('✅ Server connection OK');
+        } else {
+            console.log('⚠️ Server connection issues:', response.status);
+        }
+    })
+    .catch(error => {
+        console.log('❌ Server connection failed:', error);
+    });
+}
+
+// Cleanup when page unloads
+window.addEventListener('beforeunload', function() {
+    if (html5QrcodeScanner && cameraStarted) {
+        html5QrcodeScanner.stop().catch(err => {
+            console.log('Error stopping scanner:', err);
+        });
+    }
+});
+</script>
+{% endblock %}

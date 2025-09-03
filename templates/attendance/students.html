@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Students List - SBU QR Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-users"></i> Registered Students</h2>
+            <p class="text-muted">Sarala Birla University Student Database</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/generate-qr/" class="btn btn-primary me-2">
+                <i class="fas fa-qrcode"></i> Generate QR Codes
+            </a>
+            <a href="/upload/" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add Students
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5><i class="fas fa-list"></i> All Registered Students</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped align-middle">
+                <thead class="bg-dark text-white" style="background:#0d6efd !important;">
+                  <tr>
+                      <th>Student ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Course</th>
+                      <th>QR Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for s in students %}
+                  <tr>
+                    <td><strong>{{ s.student_id }}</strong></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.phone|default:"Not provided" }}</td>
+                    <td>{{ s.course }}</td>
+          <td class="qr-cell">
+            <img src="/static/attendance/{{ s.student_id }}.png" 
+               width="80" 
+               height="80" 
+               class="img-thumbnail"
+               alt="QR Code for {{ s.student_id }}"
+               onerror="this.style.display='none'; const c=this.closest('.qr-cell'); if(c){c.innerHTML='\u003cdiv class=\'text-muted small\'\u003e\u003ci class=\'fas fa-image-slash\'\u003e\u003c/i\u003e Not generated\u003c/div\u003e';}"> 
+          </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        <i class="fas fa-users-slash fa-2x mb-3"></i><br>
+                        No students registered yet.<br>
+                        <a href="/upload/" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus"></i> Add Students
+                        </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+        </div>
+        
+        {% if students %}
+        <div class="card-footer text-muted">
+            <i class="fas fa-info-circle"></i> Total Students: {{ students|length }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

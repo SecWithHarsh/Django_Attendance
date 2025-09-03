@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - SBU QR Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="text-center mt-4 mb-5">
+        <h1 class="display-4"><i class="fas fa-qrcode"></i> Sarala Birla University</h1>
+        <p class="lead">QR Attendance Management System</p>
+        <p class="text-muted">Efficiently track student attendance using QR codes</p>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-play-circle"></i> Active Seminars</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_seminars %}
+                        {% for seminar in active_seminars %}
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                                <div>
+                                    <h6 class="mb-1">{{ seminar.title }}</h6>
+                                    <small class="text-muted">{{ seminar.seminar_id }}</small>
+                                </div>
+                                <a href="{% url 'scan_seminar' seminar.seminar_id %}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-qrcode"></i> Scan QR
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-3">No active seminars at the moment.</p>
+                        <a href="{% url 'seminars' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Seminar
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-chart-bar"></i> System Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-primary">{{ total_students|default:0 }}</h3>
+                                    <p class="mb-0">Students</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-success">{{ total_seminars|default:0 }}</h3>
+                                    <p class="mb-0">Seminars</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-warning">{{ active_seminars_count|default:0 }}</h3>
+                                    <p class="mb-0">Active Now</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-danger">{{ total_attendance|default:0 }}</h3>
+                                    <p class="mb-0">Total Scans</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-tools"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{% url 'upload_students' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-upload fa-2x mb-2 d-block"></i>
+                                    Upload Students
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{% url 'seminars' %}" class="btn btn-outline-success">
+                                    <i class="fas fa-calendar fa-2x mb-2 d-block"></i>
+                                    Manage Seminars
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{% url 'scan' %}" class="btn btn-outline-warning">
+                                    <i class="fas fa-qrcode fa-2x mb-2 d-block"></i>
+                                    Scan QR Codes
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{% url 'qr_generator' %}" class="btn btn-outline-info">
+                                    <i class="fas fa-download fa-2x mb-2 d-block"></i>
+                                    Generate QR Codes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if recent_seminars %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="fas fa-history"></i> Recent Seminars</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Seminar</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Attendance</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for seminar in recent_seminars %}
+                                <tr>
+                                    <td>{{ seminar.title }}</td>
+                                    <td>{{ seminar.start_time|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if seminar.status == 'active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif seminar.status == 'ended' %}
+                                            <span class="badge bg-danger">Ended</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ seminar.attendance_set.count }}</td>
+                                    <td>
+                                        {% if seminar.status == 'active' %}
+                                            <a href="{% url 'scan_seminar' seminar.seminar_id %}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-qrcode"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'export_seminar_attendance' seminar.seminar_id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
